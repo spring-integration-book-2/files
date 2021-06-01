@@ -1,4 +1,4 @@
-package com.example.files.basic;
+package com.example.files.inbound.filter;
 
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,23 +12,24 @@ import org.springframework.integration.handler.GenericHandler;
 
 import java.io.File;
 
-/**
- * this demonstrates a basic, no-frills inbound file adapter
- */
 @Log4j2
 @SpringBootApplication
-public class BasicsApplication {
+public class Application {
 
     public static void main(String[] args) {
-        SpringApplication.run(BasicsApplication.class, args);
+        SpringApplication.run(Application.class, args);
     }
 
     @Bean
     IntegrationFlow fileFlow(@Value("file://${user.home}/Desktop/in/") File inDir) {
+        var messageSourceSpec = Files.inboundAdapter(inDir)
+                .autoCreateDirectory(true)
+                .useWatchService(true);
+
         return IntegrationFlows
-                .from(Files.inboundAdapter(inDir).autoCreateDirectory(true))
+                .from(messageSourceSpec, p -> p.poller(ps -> ps.fixedRate(1000 * 1)))
                 .handle((GenericHandler<File>) (file, messageHeaders) -> {
-                    log.info("new file: " + file.getAbsolutePath());
+                    System.out.println("new file: " + file.getAbsolutePath() + '.');
                     return null;
                 })
                 .get();
